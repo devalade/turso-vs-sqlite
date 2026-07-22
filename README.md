@@ -304,46 +304,36 @@ The realistic profile **substantially contradicts** the micro-benchmarks:
 
 Which is to say: if your workload looks like this mix, **the engine is not your bottleneck.**
 
-## Questions for the Turso team
+## Am I missing something?
 
-This repo exists to ask better questions, not to render a verdict. Turso is pre-1.0 and the
-numbers here are from one laptop. Specific things I'd like to understand:
+This is a third-party benchmark run on one laptop by someone who does not work on Turso, so
+the most likely explanation for any surprising number here is that **I configured something
+wrong**. If you work on Turso (or SQLite) and something looks off, I'd genuinely like to know.
 
-1. **Scan performance is the largest gap.** `select-range-indexed` (~5x) and
-   `select-fullscan-agg` (~4x) are the most reproducible results in the repo (spread ±1–14%
-   across 3 runs). Is this a known gap, and is it a query-planner issue, a B-tree/page-layout
-   issue, or the row-decoding path? Is it on the roadmap, or an accepted trade-off?
+The things I'd most suspect, in order:
 
-2. **Write tail latency is 4x BETTER than C SQLite** — p99 of ~1.2 ms vs ~5.1–5.4 ms on the
-   production mix, consistently. Is that a deliberate design outcome (different commit or
-   fsync scheduling)? And critically: **is it giving up any durability guarantee** relative to
-   C SQLite at `synchronous=NORMAL`, or is it a genuine improvement?
+1. **Am I using the right API?** Everything runs through
+   `@tursodatabase/database/compat` — chosen so all engines execute identical code paths
+   against a better-sqlite3-shaped sync API. If the async `promise` API is the intended path
+   for performance, the read numbers here may understate Turso.
 
-3. **How much of the read gap is the compat layer?** All benchmarks here use
-   `@tursodatabase/database/compat` for an apples-to-apples sync API against better-sqlite3.
-   How much of the ~2x point-read gap is N-API/compat overhead vs the core engine? Would the
-   async `promise` API show a different picture?
+2. **Am I leaving tuning on the table?** I set `journal_mode=WAL` and `synchronous=NORMAL`
+   (verified to take effect via `npm run verify`) and `cache_size=64MB` (not verified). If
+   there are pragmas or options Turso wants set that I'm missing, that would change things.
 
-4. **How should `BEGIN CONCURRENT` / MVCC be benchmarked fairly?** I deliberately did not use
-   it, since the C engines have no equivalent and it would be apples-to-oranges — but it seems
-   central to Turso's pitch. What workload shape actually demonstrates the win, and what
-   should it be compared against?
+3. **Should `BEGIN CONCURRENT` / MVCC be in here?** I deliberately left it out because the C
+   engines have no equivalent and it felt apples-to-oranges — but it seems central to the
+   design, so excluding it may be underselling the project.
 
-5. **Which pragmas are honored?** `journal_mode=WAL` and `synchronous=NORMAL` verifiably take
-   effect (`npm run verify`). `cache_size` I set but did not verify. Is there a documented
-   list of supported vs silently-ignored pragmas? Silently-ignored pragmas are an easy way for
-   a third-party benchmark to become unfair without noticing.
+4. **Is the scan result expected?** Indexed range scans and full-scan aggregates are the
+   biggest gap (~4–5x) and the most reproducible thing in the repo. Known trade-off, or a sign
+   I'm hitting a pathological path?
 
-6. **No `-shm` file is created.** WAL clearly works (a `-wal` sidecar appears and readers see
-   writers' data), so this is presumably a different shared-memory design. Does that change
-   anything for **multi-process** access to the same file, which this repo does not test?
+5. **Is the write-tail result real?** Turso's p99 on writes is ~4x *better* than both C SQLite
+   bindings under the production mix, which surprised me. I'd like to be confident that's a
+   genuine win and not me accidentally comparing different durability guarantees.
 
-7. **Is `:memory:` meant to report `journal_mode=wal`?** C SQLite falls back to
-   `journal_mode=memory` for in-memory databases; Turso reports `wal`. Minor, but it silently
-   makes in-memory cross-engine comparisons unfair (this repo therefore refuses to run them).
-
-If any of the methodology here is wrong, PRs and issues are very welcome — the harness is
-deliberately structured so every engine runs identical code paths.
+Issues and PRs welcome — the harness is structured so every engine runs the same code.
 
 ## Caveats
 

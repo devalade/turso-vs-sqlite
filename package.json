@@ -1,0 +1,25 @@
+{
+  "name": "turso-vs-sqlite",
+  "version": "1.0.0",
+  "description": "Benchmark: Turso (Rust SQLite) vs better-sqlite3 vs node:sqlite",
+  "scripts": {
+    "bench": "node src/bench.js",
+    "bench:json": "node src/bench.js --json results.json",
+    "concurrent": "node src/concurrent.js",
+    "concurrent:json": "node src/concurrent.js --json results-concurrent.json",
+    "bench:all": "node src/bench.js && node src/concurrent.js",
+    "compare": "node src/compare.js",
+    "verify": "node src/verify-config.js",
+    "prod": "node src/prod.js",
+    "prod:medium": "node src/prod.js --scale medium --duration 30"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "@tursodatabase/database": "^0.7.1",
+    "better-sqlite3": "^13.0.1",
+    "turso-next": "npm:@tursodatabase/database@^0.8.0-pre.1"
+  }
+}

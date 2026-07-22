@@ -26,10 +26,18 @@ import { quantile, formatDuration, formatOps } from "./stats.js";
 
 const WORKER_PATH = fileURLToPath(new URL("./prod-worker.js", import.meta.url));
 
+/**
+ * Dataset scales. What matters for cache behaviour is not the absolute size but
+ * the RATIO of dataset to available RAM: a 2.5 GB dataset in a 1 GB container
+ * exercises the same cache pressure as 10 GB on a 4 GB server, and seeds in a
+ * fraction of the time. See `npm run bench:docker`.
+ */
 const SCALES = {
-  small: { users: 100_000, ordersPerUser: 4 },   // ~120 MB
-  medium: { users: 400_000, ordersPerUser: 5 },  // ~600 MB
-  large: { users: 1_000_000, ordersPerUser: 6 }, // ~1.8 GB
+  small: { users: 100_000, ordersPerUser: 4 },    // ~100 MB
+  medium: { users: 400_000, ordersPerUser: 5 },   // ~600 MB
+  large: { users: 1_000_000, ordersPerUser: 6 },  // ~1.8 GB
+  xlarge: { users: 1_600_000, ordersPerUser: 6 }, // ~2.8 GB — pair with --memory=1g
+  xxlarge: { users: 5_800_000, ordersPerUser: 6 },// ~10 GB  — pair with --memory=4g
 };
 
 const { values } = parseArgs({

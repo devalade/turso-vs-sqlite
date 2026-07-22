@@ -11,7 +11,8 @@
     "compare": "node src/compare.js",
     "verify": "node src/verify-config.js",
     "prod": "node src/prod.js",
-    "prod:medium": "node src/prod.js --scale medium --duration 30"
+    "prod:medium": "node src/prod.js --scale medium --duration 30",
+    "bench:docker": "./scripts/bench-docker.sh"
   },
   "keywords": [],
   "author": "",
